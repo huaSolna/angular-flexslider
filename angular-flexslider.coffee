@@ -9,6 +9,7 @@ angular.module('angular-flexslider', [])
 		template: '<div class="flexslider-container"></div>'
 		compile: (element, attr, linker) ->
 			($scope, $element) ->
+
 				match = (attr.slide || attr.flexSlide || attr.flexslide).match /^\s*(.+)\s+in\s+(.*?)(?:\s+track\s+by\s+(.+?))?\s*$/
 				indexString = match[1]
 				collectionString = match[2]
@@ -43,13 +44,15 @@ angular.module('angular-flexslider', [])
 
 				removeSlide = (collectionItem, index) ->
 					track = getTrackFromItem collectionItem, index
-					slideItem = slidesItems[track]
+					key = window._.findKey(slidesItems, {collectionItem: collectionItem});
+					slideItem = slidesItems[key]
 					return unless slideItem?
-					delete slidesItems[track]
+					delete slidesItems[key]
 					slideItem.childScope.$destroy()
 					slideItem
 
 				$scope.$watchCollection collectionString, (collection, oldCollection) ->
+					# console.log window._.difference(oldCollection, collection);
 					# Early exit if no collection
 					return unless (collection?.length or oldCollection?.length)
 					# If flexslider is already initialized, add or remove slides
@@ -61,14 +64,16 @@ angular.module('angular-flexslider', [])
 						trackCollection = {}
 						for c, i in collection
 							trackCollection[getTrackFromItem(c, i)] = c
+						# console.log trackCollection;
 						# Generates arrays of collection items to add and remvoe
 						toAdd = ({ value: c, index: i } for c, i in collection when not slidesItems[getTrackFromItem(c, i)]?)
-						toRemove = (i.collectionItem for t, i of slidesItems when not trackCollection[t]?)
+						# toRemove = (i.collectionItem for t, i of slidesItems when not trackCollection[t]?)
+						toRemove = (window._.difference(oldCollection, collection))
 						# Workaround to a still unresolved problem in using flexslider.addSlide
 						if (toAdd.length == 1 and toRemove.length == 0) or toAdd.length == 0
 							# Remove items
 							for e in toRemove
-								e = removeSlide e, collection.indexOf(e)
+								e = removeSlide e, window._.indexOf(oldCollection, e)
 								slider.removeSlide e.element if e
 							# Add items
 							for e in toAdd
